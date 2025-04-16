@@ -5,6 +5,9 @@ function CalendarMonth({ month }: { month: number }) {
   // Get the current year
   const currentYear = Temporal.Now.plainDateISO().year;
 
+  // Get today's date
+  const today = Temporal.Now.plainDateISO();
+
   // Get the first day of the month
   const firstDayOfMonth = Temporal.PlainDate.from({
     year: currentYear,
@@ -53,12 +56,16 @@ function CalendarMonth({ month }: { month: number }) {
 
           const holiday = getHoliday(date);
 
+          const isToday = date.equals(today);
+
           return (
             <div
               key={day}
               className={`h-6 w-6 flex items-center justify-center rounded select-none text-sm lg:text-lg ${
                 holiday
                   ? "bg-red-200 text-red-800 font-bold"
+                  : isToday
+                  ? "bg-blue-200 text-blue-800 font-bold"
                   : "hover:bg-gray-200"
               }`}
               title={holiday ? holiday.name : ""}
