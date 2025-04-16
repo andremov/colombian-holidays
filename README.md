@@ -18,21 +18,25 @@ This project is a Next.js application that displays a full current year calendar
 ## Setup Instructions
 
 1. Clone the repository:
+
    ```
    git clone <repository-url>
    ```
 
 2. Navigate to the project directory:
+
    ```
    cd nextjs-calendar-app
    ```
 
 3. Install the dependencies:
+
    ```
    npm install
    ```
 
 4. Run the development server:
+
    ```
    npm run dev
    ```
@@ -43,13 +47,6 @@ This project is a Next.js application that displays a full current year calendar
 
 - The calendar will display the current year with Colombian holidays highlighted.
 - Click on any date to see the selected date and the name of the holiday (if applicable) displayed below the calendar.
-
-## API
-
-The application includes an API route to fetch Colombian holidays. You can access it at:
-```
-/api/holidays
-```
 
 ## Contributing
 
