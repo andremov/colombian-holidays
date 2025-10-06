@@ -1,76 +1,37 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Temporal } from "@js-temporal/polyfill";
 import useCalendarStore from "@/store/calendar-store";
-import { formatDate, isHoliday } from "@/utils/holidays";
+import {
+  calculateMaxCalendarDays,
+  formatDate,
+  isHoliday,
+  isWorkDay,
+  workDaysToCalendarDays,
+} from "@/utils/holidays";
 
 export default function WorkDaysCalc() {
   const { selectedDate, today } = useCalendarStore();
   const [workDays, setWorkDays] = useState<number>(1);
-  const [result, setResult] = useState<{
+
+  const result: { calendarDays: number; endDate: Temporal.PlainDate } = useMemo(
+    () => workDaysToCalendarDays(selectedDate || today, workDays),
+    [selectedDate, today, workDays]
+  );
+
+  const maxResult: {
     calendarDays: number;
+    startDate: Temporal.PlainDate;
     endDate: Temporal.PlainDate;
-  } | null>(null);
-
-  const isWorkDay = (date: Temporal.PlainDate): boolean => {
-    // Check if it's a weekend (Saturday = 6, Sunday = 7)
-    const dayOfWeek = date.dayOfWeek;
-    if (dayOfWeek === 6 || dayOfWeek === 7) {
-      return false;
-    }
-
-    // Check if it's a holiday (only works for current year)
-    const currentYear = Temporal.Now.plainDateISO().year;
-    if (date.year === currentYear) {
-      return !isHoliday(date);
-    }
-
-    // For other years, only exclude weekends
-    return true;
-  };
-
-  const calculateCalendarDays = () => {
-    const startDate = selectedDate || today;
-    let currentDate = startDate;
-    let workDaysCount = 0;
-    let calendarDaysCount = 0;
-
-    // Start from the next day if the start date is not a work day
-    if (!isWorkDay(currentDate)) {
-      currentDate = currentDate.add({ days: 1 });
-      calendarDaysCount = 1;
-    }
-
-    while (workDaysCount < workDays) {
-      if (isWorkDay(currentDate)) {
-        workDaysCount++;
-      }
-
-      if (workDaysCount < workDays) {
-        currentDate = currentDate.add({ days: 1 });
-        calendarDaysCount++;
-      }
-    }
-
-    setResult({
-      calendarDays: calendarDaysCount,
-      endDate: currentDate,
-    });
-  };
-
-  const startDate = selectedDate || today;
+  } = useMemo(
+    () => calculateMaxCalendarDays(workDays, today.year),
+    [workDays, today.year]
+  );
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 w-md">
+    <div className="bg-white rounded-lg shadow-md p-6 w-lg">
       <h2 className="text-xl font-semibold text-gray-800 mb-4">
         Work Days Calculator
       </h2>
-
-      <div className="mb-4">
-        <p className="text-sm text-gray-600 mb-2">
-          Start date:{" "}
-          <span className="font-medium">{formatDate(startDate)}</span>
-        </p>
-      </div>
 
       <div className="mb-4">
         <label
@@ -92,34 +53,45 @@ export default function WorkDaysCalc() {
         />
       </div>
 
-      <button
-        onClick={calculateCalendarDays}
-        className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-      >
-        Calculate
-      </button>
-
-      {result && (
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <h3 className="text-lg font-medium text-blue-900 mb-3">Result:</h3>
-          <div className="space-y-2">
-            <p className="text-blue-800">
-              <span className="font-semibold">Calendar days needed:</span>{" "}
-              <span className="text-lg font-bold">{result.calendarDays}</span>
-            </p>
-            <p className="text-blue-800">
-              <span className="font-semibold">End date:</span>{" "}
-              <span className="font-medium">{formatDate(result.endDate)}</span>
-            </p>
-          </div>
-
-          <div className="mt-3 text-xs text-blue-600">
-            <p>
-              * Excludes weekends and Colombian holidays for the current year
-            </p>
-          </div>
+      <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200 text-blue-800 ">
+        <p className="font-semibold text-center mb-2">From today</p>
+        <div className="flex items-center justify-between">
+          <p className="flex-col flex">
+            <span className="font-semibold">Start date:</span>{" "}
+            <span className="font-medium">
+              {formatDate(selectedDate || today)}
+            </span>
+          </p>
+          <p className="flex-col flex">
+            <span className="font-semibold">End date:</span>{" "}
+            <span className="font-medium">{formatDate(result.endDate)}</span>
+          </p>
+          <p className="flex flex-col">
+            <span className="font-semibold">Calendar days:</span>{" "}
+            <span className="font-medium">{result.calendarDays}</span>
+          </p>
         </div>
-      )}
+      </div>
+
+      <div className="mt-6 p-4 bg-red-50 rounded-lg border border-red-200 text-red-800 ">
+        <p className="font-semibold text-center mb-2">Worst case</p>
+        <div className="flex items-center justify-between">
+          <p className="flex-col flex">
+            <span className="font-semibold">Start date:</span>{" "}
+            <span className="font-medium">
+              {formatDate(maxResult.startDate)}
+            </span>
+          </p>
+          <p className="flex-col flex">
+            <span className="font-semibold">End date:</span>{" "}
+            <span className="font-medium">{formatDate(maxResult.endDate)}</span>
+          </p>
+          <p className="flex flex-col">
+            <span className="font-semibold">Calendar days:</span>{" "}
+            <span className="font-medium">{maxResult.calendarDays}</span>
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

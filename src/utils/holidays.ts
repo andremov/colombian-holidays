@@ -128,9 +128,145 @@ export function getHoliday(date: Temporal.PlainDate): Holiday | undefined {
 
 export const formatDate = (date: Temporal.PlainDate): string => {
   return date.toLocaleString("en-US", {
-    weekday: "long",
+    // weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
   });
+};
+
+export const isWorkDay = (date: Temporal.PlainDate): boolean => {
+  // Check if it's a weekend (Saturday = 6, Sunday = 7)
+  const dayOfWeek = date.dayOfWeek;
+  if (dayOfWeek === 6 || dayOfWeek === 7) {
+    return false;
+  }
+
+  // Check if it's a holiday (only works for current year)
+  const currentYear = Temporal.Now.plainDateISO().year;
+  if (date.year === currentYear) {
+    return !isHoliday(date);
+  }
+
+  // For other years, only exclude weekends
+  return true;
+};
+
+export const workDaysToCalendarDays = (
+  startDate: Temporal.PlainDate,
+  workDays: number
+): { calendarDays: number; endDate: Temporal.PlainDate } => {
+  let currentDate = startDate;
+  let workDaysCount = 0;
+  let calendarDaysCount = 0;
+
+  // Start from the next day if the start date is not a work day
+  if (!isWorkDay(currentDate)) {
+    currentDate = currentDate.add({ days: 1 });
+    calendarDaysCount = 1;
+  }
+
+  while (workDaysCount < workDays) {
+    if (isWorkDay(currentDate)) {
+      workDaysCount++;
+    }
+
+    if (workDaysCount < workDays) {
+      currentDate = currentDate.add({ days: 1 });
+      calendarDaysCount++;
+    }
+  }
+
+  return {
+    calendarDays: calendarDaysCount,
+    endDate: currentDate,
+  };
+};
+
+export const calculateMaxCalendarDays = (
+  workDays: number,
+  year: number
+): {
+  calendarDays: number;
+  startDate: Temporal.PlainDate;
+  endDate: Temporal.PlainDate;
+} => {
+  // Using a true sliding window approach for O(n) efficiency
+  // Previous implementation: O(n * m) where n = days in year, m = work days needed
+  // New implementation: O(n) where n = days in year
+  //
+  // Key optimization: Instead of recalculating work days for each start date,
+  // we maintain a window that slides across the year, adding days on the right
+  // and removing days on the left as needed to maintain exactly 'workDays' work days.
+
+  let maxCalendarDays = 0;
+  let bestStartDate: Temporal.PlainDate | null = null;
+  let bestEndDate: Temporal.PlainDate | null = null;
+
+  // Get all valid dates in the year
+  const allDates: Temporal.PlainDate[] = [];
+  for (let month = 1; month <= 12; month++) {
+    const daysInMonth = Temporal.PlainDate.from({
+      year,
+      month,
+      day: 1,
+    }).daysInMonth;
+    for (let day = 1; day <= daysInMonth; day++) {
+      allDates.push(Temporal.PlainDate.from({ year, month, day }));
+    }
+  }
+
+  // Initialize the window
+  let windowStart = 0;
+  let windowEnd = 0;
+  let workDaysInWindow = 0;
+
+  // Expand window until we have enough work days
+  while (workDaysInWindow < workDays && windowEnd < allDates.length) {
+    if (isWorkDay(allDates[windowEnd])) {
+      workDaysInWindow++;
+    }
+    windowEnd++;
+  }
+
+  // If we found enough work days, record this window
+  if (workDaysInWindow === workDays) {
+    const calendarDays = windowEnd - windowStart; // Total days in the window
+    maxCalendarDays = calendarDays;
+    bestStartDate = allDates[windowStart];
+    bestEndDate = allDates[windowEnd - 1];
+  }
+
+  // Slide the window across the rest of the year
+  while (windowEnd < allDates.length) {
+    // Add the new day to the window
+    if (isWorkDay(allDates[windowEnd])) {
+      workDaysInWindow++;
+    }
+    windowEnd++;
+
+    // Shrink window from the left while we have more than needed work days
+    while (workDaysInWindow > workDays && windowStart < windowEnd) {
+      if (isWorkDay(allDates[windowStart])) {
+        workDaysInWindow--;
+      }
+      windowStart++;
+    }
+
+    // If we have exactly the right number of work days, check if this is better
+    if (workDaysInWindow === workDays) {
+      const calendarDays = windowEnd - windowStart; // Total days in the window
+      if (calendarDays > maxCalendarDays) {
+        maxCalendarDays = calendarDays;
+        bestStartDate = allDates[windowStart];
+        bestEndDate = allDates[windowEnd - 1];
+      }
+    }
+  }
+
+  return {
+    calendarDays: maxCalendarDays,
+    startDate: bestStartDate!,
+    endDate: bestEndDate!,
+  };
 };
