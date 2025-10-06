@@ -1,12 +1,11 @@
 import { Temporal } from "@js-temporal/polyfill";
 import { getHoliday } from "../utils/holidays";
+import useCalendarStore from "@/store/calendar-store";
 
 function CalendarMonth({ month }: { month: number }) {
+  const { today, setSelectedDate, selectedDate } = useCalendarStore();
   // Get the current year
-  const currentYear = Temporal.Now.plainDateISO().year;
-
-  // Get today's date
-  const today = Temporal.Now.plainDateISO();
+  const currentYear = today.year;
 
   // Get the first day of the month
   const firstDayOfMonth = Temporal.PlainDate.from({
@@ -32,7 +31,7 @@ function CalendarMonth({ month }: { month: number }) {
           {currentYear}
         </h2>
       </div>
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-0.5">
         {/* Render weekday names */}
         {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((weekday) => (
           <div
@@ -44,7 +43,7 @@ function CalendarMonth({ month }: { month: number }) {
         ))}
         {/* Render empty cells for days before the start of the month */}
         {Array.from({ length: startDayOfWeek }).map((_, index) => (
-          <div key={`empty-${index}`} className="h-6 w-6"></div>
+          <div key={`empty-${index}`} className="size-8"></div>
         ))}
         {/* Render the days of the month */}
         {days.map((day) => {
@@ -58,14 +57,21 @@ function CalendarMonth({ month }: { month: number }) {
 
           const isToday = date.equals(today);
 
+          const isSelected = selectedDate ? date.equals(selectedDate) : false;
+
           return (
             <div
               key={day}
-              className={`h-6 w-6 flex items-center justify-center rounded select-none text-sm lg:text-lg ${
-                holiday
-                  ? "bg-red-200 text-red-800 font-bold"
+              onClick={() => setSelectedDate(date)}
+              className={`size-8 flex items-center justify-center rounded select-none text-sm lg:text-lg cursor-pointer ${
+                isSelected ? "border-1 border-green-400" : ""
+              } ${
+                isToday && holiday
+                  ? "bg-purple-200 text-purple-800 font-bold"
                   : isToday
                   ? "bg-blue-200 text-blue-800 font-bold"
+                  : holiday
+                  ? "bg-red-100 text-red-800"
                   : "hover:bg-gray-200"
               }`}
               title={holiday ? holiday.name : ""}

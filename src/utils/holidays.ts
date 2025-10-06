@@ -125,3 +125,12 @@ export function getHoliday(date: Temporal.PlainDate): Holiday | undefined {
     (holiday) => holiday.date.toString() === dateString
   );
 }
+
+export const formatDate = (date: Temporal.PlainDate): string => {
+  return date.toLocaleString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};

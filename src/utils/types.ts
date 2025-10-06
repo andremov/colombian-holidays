@@ -6,8 +6,8 @@ export type Holiday = {
 };
 
 export type CalendarState = {
+  today: Temporal.PlainDate;
   selectedDate: Temporal.PlainDate | null;
   holiday: Holiday | null;
   setSelectedDate: (date: Temporal.PlainDate) => void;
-  setHoliday: (holiday: Holiday | null) => void;
 };
