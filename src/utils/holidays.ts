@@ -158,13 +158,10 @@ export const workDaysToCalendarDays = (
 ): { calendarDays: number; endDate: Temporal.PlainDate } => {
   let currentDate = startDate;
   let workDaysCount = 0;
-  let calendarDaysCount = 0;
+  let calendarDaysCount = 1;
 
-  // Start from the next day if the start date is not a work day
-  if (!isWorkDay(currentDate)) {
-    currentDate = currentDate.add({ days: 1 });
-    calendarDaysCount = 1;
-  }
+  // Always start the next day
+  currentDate = currentDate.add({ days: 1 });
 
   while (workDaysCount < workDays) {
     if (isWorkDay(currentDate)) {
@@ -176,6 +173,12 @@ export const workDaysToCalendarDays = (
       calendarDaysCount++;
     }
   }
+
+  // Now find the next work day after completing the requested work days
+  do {
+    currentDate = currentDate.add({ days: 1 });
+    calendarDaysCount++;
+  } while (!isWorkDay(currentDate));
 
   return {
     calendarDays: calendarDaysCount,
@@ -191,13 +194,9 @@ export const calculateMaxCalendarDays = (
   startDate: Temporal.PlainDate;
   endDate: Temporal.PlainDate;
 } => {
-  // Using a true sliding window approach for O(n) efficiency
-  // Previous implementation: O(n * m) where n = days in year, m = work days needed
-  // New implementation: O(n) where n = days in year
-  //
-  // Key optimization: Instead of recalculating work days for each start date,
-  // we maintain a window that slides across the year, adding days on the right
-  // and removing days on the left as needed to maintain exactly 'workDays' work days.
+  // Revised approach: Try each possible start date and use workDaysToCalendarDays
+  // to find the period, then track the maximum calendar days found.
+  // This ensures perfect consistency with workDaysToCalendarDays behavior.
 
   let maxCalendarDays = 0;
   let bestStartDate: Temporal.PlainDate | null = null;
@@ -216,51 +215,22 @@ export const calculateMaxCalendarDays = (
     }
   }
 
-  // Initialize the window
-  let windowStart = 0;
-  let windowEnd = 0;
-  let workDaysInWindow = 0;
+  // Try each date as a potential start date
+  for (const startDate of allDates) {
+    try {
+      const result = workDaysToCalendarDays(startDate, workDays);
 
-  // Expand window until we have enough work days
-  while (workDaysInWindow < workDays && windowEnd < allDates.length) {
-    if (isWorkDay(allDates[windowEnd])) {
-      workDaysInWindow++;
-    }
-    windowEnd++;
-  }
-
-  // If we found enough work days, record this window
-  if (workDaysInWindow === workDays) {
-    const calendarDays = windowEnd - windowStart; // Total days in the window
-    maxCalendarDays = calendarDays;
-    bestStartDate = allDates[windowStart];
-    bestEndDate = allDates[windowEnd - 1];
-  }
-
-  // Slide the window across the rest of the year
-  while (windowEnd < allDates.length) {
-    // Add the new day to the window
-    if (isWorkDay(allDates[windowEnd])) {
-      workDaysInWindow++;
-    }
-    windowEnd++;
-
-    // Shrink window from the left while we have more than needed work days
-    while (workDaysInWindow > workDays && windowStart < windowEnd) {
-      if (isWorkDay(allDates[windowStart])) {
-        workDaysInWindow--;
+      // Only consider results where the end date is in the same year
+      if (result.endDate.year === year) {
+        if (result.calendarDays > maxCalendarDays) {
+          maxCalendarDays = result.calendarDays;
+          bestStartDate = startDate;
+          bestEndDate = result.endDate;
+        }
       }
-      windowStart++;
-    }
-
-    // If we have exactly the right number of work days, check if this is better
-    if (workDaysInWindow === workDays) {
-      const calendarDays = windowEnd - windowStart; // Total days in the window
-      if (calendarDays > maxCalendarDays) {
-        maxCalendarDays = calendarDays;
-        bestStartDate = allDates[windowStart];
-        bestEndDate = allDates[windowEnd - 1];
-      }
+    } catch (error) {
+      // Skip start dates that can't accommodate the required work days within the year
+      continue;
     }
   }
 
