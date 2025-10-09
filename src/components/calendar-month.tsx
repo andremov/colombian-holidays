@@ -1,5 +1,5 @@
 import { Temporal } from "@js-temporal/polyfill";
-import { getHoliday } from "../utils/holidays";
+import { getHoliday } from "../lib/holidays";
 import useCalendarStore from "@/store/calendar-store";
 
 function CalendarMonth({ month }: { month: number }) {

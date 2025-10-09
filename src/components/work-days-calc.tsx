@@ -4,10 +4,9 @@ import useCalendarStore from "@/store/calendar-store";
 import {
   calculateMaxCalendarDays,
   formatDate,
-  isHoliday,
-  isWorkDay,
   workDaysToCalendarDays,
-} from "@/utils/holidays";
+} from "@/lib/holidays";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 export default function WorkDaysCalc() {
   const { selectedDate, today } = useCalendarStore();
@@ -73,25 +72,37 @@ export default function WorkDaysCalc() {
         </div>
       </div>
 
-      <div className="mt-6 p-4 bg-red-50 rounded-lg border border-red-200 text-red-800 ">
-        <p className="font-semibold text-center mb-2">Worst case</p>
-        <div className="flex items-center justify-between">
-          <p className="flex-col flex">
-            <span className="font-semibold">Start date:</span>{" "}
-            <span className="font-medium">
-              {formatDate(maxResult.startDate)}
-            </span>
+      <Tooltip>
+        <TooltipTrigger className="mt-6 p-4 bg-red-50 rounded-lg border border-red-200 text-red-800 w-full">
+          <p className="font-semibold text-center mb-2">Worst case</p>
+          <div className="flex items-center justify-between">
+            <p className="flex-col flex">
+              <span className="font-semibold">Start date:</span>{" "}
+              <span className="font-medium">
+                {formatDate(maxResult.startDate)}
+              </span>
+            </p>
+            <p className="flex-col flex">
+              <span className="font-semibold">End date:</span>{" "}
+              <span className="font-medium">
+                {formatDate(maxResult.endDate)}
+              </span>
+            </p>
+            <p className="flex flex-col">
+              <span className="font-semibold">Calendar days:</span>{" "}
+              <span className="font-medium">{maxResult.calendarDays}</span>
+            </p>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p className="max-w-sm text-justify">
+            This is the worst-case scenario for the number of calendar days it
+            could take to complete the specified work days, based on any start
+            date within the current year. There may be other start dates that
+            yield the same maximum calendar days, this is just one example.
           </p>
-          <p className="flex-col flex">
-            <span className="font-semibold">End date:</span>{" "}
-            <span className="font-medium">{formatDate(maxResult.endDate)}</span>
-          </p>
-          <p className="flex flex-col">
-            <span className="font-semibold">Calendar days:</span>{" "}
-            <span className="font-medium">{maxResult.calendarDays}</span>
-          </p>
-        </div>
-      </div>
+        </TooltipContent>
+      </Tooltip>
     </div>
   );
 }

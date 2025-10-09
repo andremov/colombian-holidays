@@ -1,4 +1,4 @@
-import { CalendarState } from "@/utils/types";
+import { CalendarState } from "@/lib/types";
 import { Temporal } from "@js-temporal/polyfill";
 import { create } from "zustand";
 

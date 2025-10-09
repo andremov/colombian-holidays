@@ -1,6 +1,6 @@
 import React from "react";
 import useCalendarStore from "../store/calendar-store";
-import { formatDate, getHoliday } from "@/utils/holidays";
+import { formatDate, getHoliday } from "@/lib/holidays";
 
 export default function HolidayInfo() {
   const { today, selectedDate } = useCalendarStore();
