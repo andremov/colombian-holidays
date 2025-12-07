@@ -111,19 +111,24 @@ function getColombianHolidays(year: number): Holiday[] {
   return holidays;
 }
 
-const colombianHolidays = getColombianHolidays(
-  Temporal.Now.plainDateISO().year
-);
+// Cache holidays for multiple years
+const holidayCache: Map<number, Holiday[]> = new Map();
+
+function getHolidaysForYear(year: number): Holiday[] {
+  if (!holidayCache.has(year)) {
+    holidayCache.set(year, getColombianHolidays(year));
+  }
+  return holidayCache.get(year)!;
+}
 
 export const isHoliday = (date: Temporal.PlainDate): boolean => {
   return getHoliday(date) !== undefined;
 };
 
 export function getHoliday(date: Temporal.PlainDate): Holiday | undefined {
+  const holidays = getHolidaysForYear(date.year);
   const dateString = date.toString();
-  return colombianHolidays.find(
-    (holiday) => holiday.date.toString() === dateString
-  );
+  return holidays.find((holiday) => holiday.date.toString() === dateString);
 }
 
 export const formatDate = (date: Temporal.PlainDate): string => {
@@ -142,14 +147,8 @@ export const isWorkDay = (date: Temporal.PlainDate): boolean => {
     return false;
   }
 
-  // Check if it's a holiday (only works for current year)
-  const currentYear = Temporal.Now.plainDateISO().year;
-  if (date.year === currentYear) {
-    return !isHoliday(date);
-  }
-
-  // For other years, only exclude weekends
-  return true;
+  // Check if it's a holiday
+  return !isHoliday(date);
 };
 
 export const workDaysToCalendarDays = (
@@ -240,3 +239,25 @@ export const calculateMaxCalendarDays = (
     endDate: bestEndDate!,
   };
 };
+
+/*
+2026
+1 de enero	Jueves	Año Nuevo
+12 de enero	Lunes	Reyes Magos
+23 de marzo	Lunes	Día de San José
+2 de abril	Jueves	Jueves Santo
+3 de abril	Viernes	Viernes Santo
+1 de mayo	Viernes	Día del trabajo
+18 de mayo	Lunes	Ascensión de Jesús
+8 de junio	Lunes	Corpus Christi
+15 de junio	Lunes	Sagrado Corazón de Jesús
+29 de junio	Lunes	San Pedro y San Pablo
+20 de julio	Lunes	Día de la independencia
+7 de agosto	Viernes	Batalla de Boyacá
+17 de agosto	Lunes	Asunción de la Virgen
+12 de octubre	Lunes	Día de la raza
+2 de noviembre	Lunes	Todos los Santos
+16 de noviembre	Lunes	Independencia de Cartagena
+8 de diciembre	Martes	Inmaculada Concepción
+25 de diciembre	Viernes	Navidad
+*/
